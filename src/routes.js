@@ -1,7 +1,6 @@
 import express from "express";
 import axios from "axios";
 import { extractMetadata } from "./scraper.js";
-// import { JSDOM } from "jsdom";
 
 const router = express.Router();
 

@@ -4,13 +4,6 @@ import * as cheerio from "cheerio";
 export async function extractMetadata(url) {
   try {
     const response = await axios.get(url, {
-      // headers: {
-      //   "User-Agent": "Mozilla/5.0 ... Chrome/120",
-      //   Accept: "text/html,application/xhtml+xml",
-      //   "sec-fetch-mode": "navigate",
-      //   "sec-fetch-site": "none",
-      //   "sec-fetch-user": "?1",
-      // },
       headers: {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,/;q=0.8',
@@ -46,7 +39,6 @@ export async function extractMetadata(url) {
       if (img) ogImageSecure.push(img);
     });
 
-    // Twitter images
     const twitterImages = [];
     $("meta[name='twitter:image'], meta[name='twitter:image:src']").each(
       (i, el) => {
