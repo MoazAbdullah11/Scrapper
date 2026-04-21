@@ -14,7 +14,7 @@ export async function extractMetadata(url) {
         'Cache-Control': 'no-cache',
         'Pragma': 'no-cache'
       },
-      timeout: 20000,
+      timeout: 30000,
     });
 
     const html = response.data;
