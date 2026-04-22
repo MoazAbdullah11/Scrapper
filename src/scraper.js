@@ -4,6 +4,8 @@ import fs from "fs";
 
 export async function extractMetadata(url) {
   try {
+    const DEBUG = false; // 🔥 turn ON/OFF
+
     const response = await axios.get(url, {
       headers: {
         "User-Agent":
@@ -18,15 +20,23 @@ export async function extractMetadata(url) {
 
     const html = response.data;
 
-    // ✅ SAVE HTML FOR DEBUGGING
-    fs.writeFileSync("debug.html", html, "utf-8");
+    // ✅ SAFE DEBUG (no crash on Vercel)
+    if (DEBUG) {
+      try {
+        fs.writeFileSync("/tmp/debug.html", html, "utf-8");
+        console.log("✅ Debug HTML saved in /tmp/debug.html");
+      } catch (e) {
+        console.log("⚠️ Cannot write file, fallback to log");
+        console.log(html.slice(0, 1500));
+      }
+    }
 
     const $ = cheerio.load(html);
 
     const get = (sel) => $(sel).attr("content") || $(sel).text() || null;
 
     // =========================
-    // ✅ OG IMAGES
+    // OG IMAGES
     // =========================
     const ogImages = [];
     $("meta[property='og:image']").each((i, el) => {
@@ -35,7 +45,7 @@ export async function extractMetadata(url) {
     });
 
     // =========================
-    // ✅ TWITTER IMAGES
+    // TWITTER IMAGES
     // =========================
     const twitterImages = [];
     $("meta[name='twitter:image'], meta[name='twitter:image:src']").each(
@@ -46,7 +56,7 @@ export async function extractMetadata(url) {
     );
 
     // =========================
-    // ✅ FALLBACK: FIRST <img>
+    // FALLBACK: FIRST IMG
     // =========================
     let firstImage = null;
     $("img").each((i, el) => {
@@ -55,13 +65,13 @@ export async function extractMetadata(url) {
         $(el).attr("data-src") ||
         $(el).attr("data-original");
 
-      if (src && src.includes("http") && !firstImage) {
+      if (src && src.startsWith("http") && !firstImage) {
         firstImage = src;
       }
     });
 
     // =========================
-    // ✅ FALLBACK: BACKGROUND IMAGE
+    // BACKGROUND IMAGE
     // =========================
     if (!firstImage) {
       $("*").each((i, el) => {
@@ -77,29 +87,26 @@ export async function extractMetadata(url) {
     }
 
     // =========================
-    // ✅ ADVANCED: JSON DATA EXTRACTION (TEMU FIX 🔥)
+    // 🔥 TEMU JSON IMAGE FIX
     // =========================
     let jsonImage = null;
 
     $("script").each((i, el) => {
       const content = $(el).html();
 
-      if (content && content.includes("image")) {
-        try {
-          // Find kwcdn image (Temu CDN)
-          const match = content.match(
-            /https:\/\/img\.kwcdn\.com[^"']+/g
-          );
-          if (match && match.length) {
-            jsonImage = match[0];
-            return false;
-          }
-        } catch (e) {}
+      if (content && content.includes("kwcdn")) {
+        const match = content.match(
+          /https:\/\/img\.kwcdn\.com[^"']+/g
+        );
+        if (match && match.length) {
+          jsonImage = match[0];
+          return false;
+        }
       }
     });
 
     // =========================
-    // ✅ FINAL IMAGE PRIORITY
+    // FINAL IMAGE
     // =========================
     const finalImage =
       ogImages[0] ||
@@ -108,23 +115,18 @@ export async function extractMetadata(url) {
       firstImage ||
       null;
 
-    const data = {
+    return {
       title: $("title").text() || null,
       description: get("meta[name='description']"),
       ogTitle: get("meta[property='og:title']"),
       ogDescription: get("meta[property='og:description']"),
-
       image: finalImage,
-
       favicon:
         $("link[rel='icon']").attr("href") ||
         $("link[rel='shortcut icon']").attr("href") ||
         null,
-
       success: true,
     };
-
-    return data;
   } catch (err) {
     return {
       success: false,
