@@ -23,22 +23,6 @@ router.get("/metadata", async (req, res) => {
   }
 });
 
-router.get("/debug-html", async (req, res) => {
-  const { url } = req.query;
-
-  try {
-    const response = await axios.get(url, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 Chrome/120",
-      },
-    });
-
-    res.send(response.data); // full HTML
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 router.get("/robots", async (req, res) => {
   const { url } = req.query;
 
