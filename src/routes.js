@@ -23,6 +23,18 @@ router.get("/metadata", async (req, res) => {
   }
 });
 
+router.get("/robots", async (req, res) => {
+  const { url } = req.query;
+
+  try {
+    const robotsUrl = new URL("/robots.txt", url).href;
+    const response = await axios.get(robotsUrl);
+    res.send(response.data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get("/view-html", async (req, res) => {
   const { url } = req.query;
 
