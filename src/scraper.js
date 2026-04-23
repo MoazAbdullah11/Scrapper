@@ -21,6 +21,7 @@ export async function extractMetadata(url) {
     const $ = cheerio.load(html);
 
     const get = (sel) => $(sel).attr("content") || $(sel).text() || null;
+
     const ogImages = [];
     $("meta[property='og:image']").each((i, el) => {
       const img = $(el).attr("content");
@@ -60,9 +61,42 @@ export async function extractMetadata(url) {
       });
     });
 
+    // ===== TITLE =====
+    let title = $("title").text() || null;
+
+    // ===== DESCRIPTION =====
+    let description = get("meta[name='description']");
+
+    // ===== TEMU FALLBACK =====
+    if (url.includes("temu.com")) {
+      try {
+        const cleanUrl = url.split("?")[0];
+        const slug = cleanUrl.split("/").pop();
+
+        if (slug) {
+          const namePart = slug
+            .replace(/-g-\d+\.html$/, "")
+            .replace(/\.html$/, "")
+            .replace(/-/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+
+          // fix title
+          if ((!title || title.toLowerCase().includes("temu")) && namePart.length > 5) {
+            title = namePart;
+          }
+
+          // fix description
+          if ((!description || description.length < 10) && namePart.length > 5) {
+            description = `Buy ${namePart} at best price online.`;
+          }
+        }
+      } catch (e) {}
+    }
+
     const data = {
-      title: $("title").text() || null,
-      description: get("meta[name='description']"),
+      title: title,
+      description: description,
       ogTitle: get("meta[property='og:title']"),
       ogDescription: get("meta[property='og:description']"),
 
@@ -77,10 +111,12 @@ export async function extractMetadata(url) {
         $("link[rel='icon']").attr("href") ||
         $("link[rel='shortcut icon']").attr("href") ||
         null,
+
       success: true,
     };
 
     return data;
+
   } catch (err) {
     return {
       success: false,
